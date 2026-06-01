@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>反應速度測試</title>
+<title>九宮格反應測試</title>
 
 <style>
 
@@ -15,36 +15,57 @@ font-family:Arial,sans-serif;
 }
 
 body{
+background:#0f172a;
+color:white;
 display:flex;
 justify-content:center;
 align-items:center;
-height:100vh;
-background:#1e293b;
-color:white;
-text-align:center;
+min-height:100vh;
 }
 
 .container{
+text-align:center;
 width:90%;
-max-width:600px;
-}
-
-#gameArea{
-margin-top:20px;
-padding:60px;
-border-radius:20px;
-background:#ef4444;
-cursor:pointer;
-transition:.2s;
-user-select:none;
-}
-
-.green{
-background:#22c55e !important;
+max-width:700px;
 }
 
 h1{
 margin-bottom:20px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:15px;
+margin:30px auto;
+max-width:450px;
+}
+
+.cell{
+aspect-ratio:1;
+background:#334155;
+border-radius:15px;
+cursor:pointer;
+transition:.2s;
+}
+
+.active{
+background:#22c55e;
+box-shadow:0 0 20px #22c55e;
+}
+
+.info{
+font-size:22px;
+margin:10px;
+}
+
+button{
+padding:12px 25px;
+font-size:18px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+margin-top:20px;
 }
 
 #result{
@@ -53,131 +74,168 @@ font-size:24px;
 font-weight:bold;
 }
 
-button{
-margin-top:20px;
-padding:12px 24px;
-font-size:18px;
-border:none;
-border-radius:10px;
-cursor:pointer;
-}
-
 </style>
 </head>
 <body>
 
 <div class="container">
 
-<h1>⚡ 反應速度測試</h1>
+<h1>⚡ 九宮格反應測試</h1>
 
-<p id="message">
-點擊開始後等待畫面變綠
-</p>
-
-<div id="gameArea">
-點擊開始
+<div class="info">
+回合：
+<span id="round">0</span>/10
 </div>
+
+<div class="grid" id="grid"></div>
 
 <div id="result"></div>
 
 <button onclick="startGame()">
-重新開始
+開始遊戲
 </button>
 
 </div>
 
 <script>
 
-const gameArea =
-document.getElementById("gameArea");
+const grid =
+document.getElementById("grid");
 
-const message =
-document.getElementById("message");
+const roundText =
+document.getElementById("round");
 
 const result =
 document.getElementById("result");
 
-let startTime;
-let waiting = false;
-let canClick = false;
-let timer;
+let currentCell = -1;
 
-function startGame(){
+let startTime = 0;
 
-clearTimeout(timer);
+let round = 0;
 
-result.innerHTML = "";
+let reactionTimes = [];
 
-gameArea.classList.remove("green");
+let active = false;
 
-gameArea.innerHTML = "等待變綠...";
+for(let i=0;i<9;i++){
 
-message.innerHTML =
-"不要太早點擊！";
+const cell =
+document.createElement("div");
 
-waiting = true;
-canClick = false;
+cell.className = "cell";
 
-const delay =
-Math.random()*3000 + 2000;
+cell.dataset.index = i;
 
-timer = setTimeout(()=>{
+cell.addEventListener("click",()=>{
 
-gameArea.classList.add("green");
-
-gameArea.innerHTML =
-"立即點擊！";
-
-startTime = Date.now();
-
-canClick = true;
-waiting = false;
-
-},delay);
-}
-
-gameArea.addEventListener("click",()=>{
-
-if(canClick){
+if(
+active &&
+Number(cell.dataset.index) === currentCell
+){
 
 const reaction =
 Date.now() - startTime;
 
+reactionTimes.push(reaction);
+
+active = false;
+
+cell.classList.remove("active");
+
+nextRound();
+}
+});
+
+grid.appendChild(cell);
+}
+
+function startGame(){
+
+round = 0;
+
+reactionTimes = [];
+
+result.innerHTML = "";
+
+nextRound();
+}
+
+function nextRound(){
+
+round++;
+
+roundText.textContent = round-1;
+
+if(round > 10){
+
+finishGame();
+
+return;
+}
+
+const delay =
+Math.random()*2500 + 500;
+
+setTimeout(()=>{
+
+const cells =
+document.querySelectorAll(".cell");
+
+cells.forEach(c=>
+c.classList.remove("active")
+);
+
+currentCell =
+Math.floor(Math.random()*9);
+
+cells[currentCell]
+.classList.add("active");
+
+startTime =
+Date.now();
+
+active = true;
+
+roundText.textContent = round;
+
+},delay);
+}
+
+function finishGame(){
+
+const avg =
+Math.round(
+
+reactionTimes.reduce(
+(a,b)=>a+b,0
+)
+/
+reactionTimes.length
+
+);
+
+if(avg < 500){
+
 result.innerHTML =
-`你的反應時間：${reaction} ms`;
-
-if(reaction < 500){
-
-result.innerHTML +=
-"<br>✅ 過關！";
+`
+平均反應時間：
+${avg} ms
+<br><br>
+✅ 過關
+`;
 }
 else{
 
-result.innerHTML +=
-"<br>❌ 未過關";
-}
-
-canClick = false;
-
-gameArea.classList.remove("green");
-
-gameArea.innerHTML =
-"測試完成";
-}
-
-else if(waiting){
-
-clearTimeout(timer);
-
 result.innerHTML =
-"❌ 太早點擊了！";
-
-gameArea.innerHTML =
-"請重新開始";
-
-waiting = false;
+`
+平均反應時間：
+${avg} ms
+<br><br>
+❌ 未過關
+`;
 }
-});
+}
 
 </script>
 
