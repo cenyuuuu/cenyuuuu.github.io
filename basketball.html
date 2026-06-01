@@ -4,333 +4,402 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>移動投籃挑戰</title>
+<title>🏀 投籃挑戰賽</title>
 
 <style>
 *{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
 }
 
 body{
-    background:linear-gradient(135deg,#0f172a,#1e293b);
-    color:white;
-    font-family:Arial,sans-serif;
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+padding:20px;
 }
 
 .container{
-    text-align:center;
-    width:95%;
-    max-width:900px;
+width:100%;
+max-width:950px;
+text-align:center;
 }
 
 h1{
-    margin-bottom:20px;
+margin-bottom:15px;
 }
 
 .stats{
-    display:flex;
-    justify-content:center;
-    gap:25px;
-    margin-bottom:15px;
-    flex-wrap:wrap;
+display:flex;
+justify-content:center;
+gap:20px;
+flex-wrap:wrap;
+margin-bottom:15px;
 }
 
 .card{
-    background:rgba(255,255,255,0.1);
-    padding:10px 20px;
-    border-radius:12px;
+background:rgba(255,255,255,.12);
+padding:12px 20px;
+border-radius:12px;
+font-size:18px;
 }
 
 canvas{
-    background:#dbeafe;
-    border-radius:16px;
-    border:4px solid white;
-    width:100%;
-    max-width:800px;
+background:linear-gradient(#87ceeb,#cfefff);
+border-radius:15px;
+border:4px solid white;
+width:100%;
+max-width:900px;
+touch-action:none;
+}
+
+#gameOver{
+display:none;
+margin-top:20px;
 }
 
 button{
-    padding:12px 24px;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    margin-top:20px;
-    font-size:18px;
+padding:12px 25px;
+border:none;
+border-radius:10px;
+font-size:18px;
+cursor:pointer;
+margin-top:15px;
 }
 
-#result{
-    display:none;
-    margin-top:20px;
+#leaderboard{
+margin-top:20px;
+background:rgba(255,255,255,.1);
+padding:15px;
+border-radius:12px;
 }
 </style>
 </head>
-
 <body>
 
 <div class="container">
 
-<h1>🏀 移動投籃挑戰</h1>
+<h1>🏀 投籃挑戰賽</h1>
 
 <div class="stats">
-    <div class="card">
-        剩餘球數：
-        <span id="balls">10</span>
-    </div>
-
-    <div class="card">
-        命中：
-        <span id="hits">0</span>
-    </div>
+<div class="card">時間：<span id="time">60</span>s</div>
+<div class="card">得分：<span id="score">0</span></div>
+<div class="card">投籃：<span id="shots">0</span></div>
 </div>
 
-<canvas id="gameCanvas" width="800" height="500"></canvas>
+<canvas id="game" width="900" height="550"></canvas>
 
-<p style="margin-top:15px;">
-點擊畫面發射籃球
+<p style="margin-top:10px">
+拖曳籃球後放開投射
 </p>
 
-<div id="result">
-    <h2 id="finalText"></h2>
-    <button onclick="restartGame()">
-        再玩一次
-    </button>
+<div id="gameOver">
+<h2 id="result"></h2>
+<input id="playerName" placeholder="輸入名字">
+<br>
+<button onclick="saveScore()">儲存成績</button>
+<button onclick="restart()">重新開始</button>
+</div>
+
+<div id="leaderboard">
+<h3>🏆 排行榜</h3>
+<div id="scores"></div>
 </div>
 
 </div>
 
 <script>
 
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-let basketX = 300;
-let basketDirection = 1;
-let basketSpeed = 4;
+let score=0;
+let shots=0;
+let timeLeft=60;
+let gameEnded=false;
 
-let ball = null;
+const scoreEl=document.getElementById("score");
+const shotsEl=document.getElementById("shots");
+const timeEl=document.getElementById("time");
 
-let shotsLeft = 10;
-let hits = 0;
+let basket={
+x:350,
+y:180,
+w:120,
+h:12,
+speed:5,
+dir:1
+};
 
-let gameOver = false;
+let ball={
+x:450,
+y:470,
+r:22,
+vx:0,
+vy:0,
+moving:false
+};
 
-canvas.addEventListener("click",(e)=>{
+let dragging=false;
+let dragStart=null;
+let dragEnd=null;
 
-    if(gameOver) return;
-    if(ball) return;
-    if(shotsLeft<=0) return;
+function resetBall(){
+ball.x=450;
+ball.y=470;
+ball.vx=0;
+ball.vy=0;
+ball.moving=false;
+}
 
-    const rect = canvas.getBoundingClientRect();
+function getPos(e){
+const rect=canvas.getBoundingClientRect();
 
-    const clickX =
-        (e.clientX - rect.left) *
-        (canvas.width / rect.width);
+if(e.touches){
+return{
+x:(e.touches[0].clientX-rect.left)*(canvas.width/rect.width),
+y:(e.touches[0].clientY-rect.top)*(canvas.height/rect.height)
+};
+}
 
-    ball = {
-        x: canvas.width/2,
-        y: canvas.height-50,
-        vx:(clickX-canvas.width/2)/30,
-        vy:-10
-    };
+return{
+x:(e.clientX-rect.left)*(canvas.width/rect.width),
+y:(e.clientY-rect.top)*(canvas.height/rect.height)
+};
+}
 
-    shotsLeft--;
+canvas.addEventListener("mousedown",startDrag);
+canvas.addEventListener("mousemove",moveDrag);
+canvas.addEventListener("mouseup",endDrag);
 
-    document.getElementById("balls").textContent =
-        shotsLeft;
-});
+canvas.addEventListener("touchstart",startDrag);
+canvas.addEventListener("touchmove",moveDrag);
+canvas.addEventListener("touchend",endDrag);
+
+function startDrag(e){
+
+if(gameEnded)return;
+if(ball.moving)return;
+
+const p=getPos(e);
+
+const dx=p.x-ball.x;
+const dy=p.y-ball.y;
+
+if(Math.sqrt(dx*dx+dy*dy)<=ball.r+10){
+dragging=true;
+dragStart={x:ball.x,y:ball.y};
+dragEnd=p;
+}
+}
+
+function moveDrag(e){
+
+if(!dragging)return;
+
+dragEnd=getPos(e);
+}
+
+function endDrag(){
+
+if(!dragging)return;
+
+dragging=false;
+
+const powerX=(dragStart.x-dragEnd.x)/8;
+const powerY=(dragStart.y-dragEnd.y)/8;
+
+ball.vx=powerX;
+ball.vy=powerY;
+
+ball.moving=true;
+
+shots++;
+shotsEl.textContent=shots;
+}
 
 function update(){
 
-    basketX += basketSpeed * basketDirection;
+if(gameEnded)return;
 
-    if(basketX < 40 || basketX > 660){
-        basketDirection *= -1;
-    }
+basket.x+=basket.speed*basket.dir;
 
-    if(ball){
+if(basket.x<30||basket.x+basket.w>canvas.width-30){
+basket.dir*=-1;
+}
 
-        ball.x += ball.vx;
-        ball.y += ball.vy;
+if(ball.moving){
 
-        ball.vy += 0.3;
+ball.x+=ball.vx;
+ball.y+=ball.vy;
 
-        if(
-            ball.x > basketX &&
-            ball.x < basketX+100 &&
-            ball.y > 70 &&
-            ball.y < 95
-        ){
+ball.vy+=0.35;
 
-            hits++;
+if(
+ball.x>basket.x &&
+ball.x<basket.x+basket.w &&
+ball.y>basket.y &&
+ball.y<basket.y+25
+){
 
-            document.getElementById("hits").textContent =
-                hits;
+score++;
+scoreEl.textContent=score;
 
-            ball = null;
-        }
+resetBall();
+}
 
-        if(ball && ball.y > canvas.height){
-            ball = null;
-        }
-    }
+if(ball.y>canvas.height+50){
+resetBall();
+}
 
-    if(
-        shotsLeft===0 &&
-        ball===null &&
-        !gameOver
-    ){
-        finishGame();
-    }
-
-    draw();
-
-    requestAnimationFrame(update);
+if(ball.x<ball.r||ball.x>canvas.width-ball.r){
+ball.vx*=-0.8;
+}
+}
 }
 
 function draw(){
 
-    ctx.clearRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
+ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // 地面
-    ctx.fillStyle="#94a3b8";
+ctx.fillStyle="#888";
+ctx.fillRect(0,520,900,30);
 
-    ctx.fillRect(
-        0,
-        canvas.height-20,
-        canvas.width,
-        20
-    );
+ctx.fillStyle="red";
+ctx.fillRect(
+basket.x,
+basket.y,
+basket.w,
+basket.h
+);
 
-    // 籃框
-    ctx.fillStyle="red";
+ctx.strokeStyle="white";
+ctx.lineWidth=2;
 
-    ctx.fillRect(
-        basketX,
-        80,
-        100,
-        10
-    );
+for(let i=0;i<6;i++){
 
-    // 籃網
-    ctx.strokeStyle="white";
+ctx.beginPath();
 
-    ctx.beginPath();
-    ctx.moveTo(basketX,90);
-    ctx.lineTo(basketX+15,120);
+ctx.moveTo(
+basket.x+i*20,
+basket.y+10
+);
 
-    ctx.moveTo(basketX+25,90);
-    ctx.lineTo(basketX+35,120);
+ctx.lineTo(
+basket.x+i*20+10,
+basket.y+50
+);
 
-    ctx.moveTo(basketX+50,90);
-    ctx.lineTo(basketX+50,120);
-
-    ctx.moveTo(basketX+75,90);
-    ctx.lineTo(basketX+65,120);
-
-    ctx.moveTo(basketX+100,90);
-    ctx.lineTo(basketX+85,120);
-
-    ctx.stroke();
-
-    // 球
-    if(ball){
-
-        ctx.fillStyle="orange";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            ball.x,
-            ball.y,
-            12,
-            0,
-            Math.PI*2
-        );
-
-        ctx.fill();
-    }
-
-    // 發球位置
-    ctx.fillStyle="#f97316";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        canvas.width/2,
-        canvas.height-40,
-        15,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
+ctx.stroke();
 }
 
-function finishGame(){
+ctx.fillStyle="orange";
 
-    gameOver = true;
+ctx.beginPath();
+ctx.arc(
+ball.x,
+ball.y,
+ball.r,
+0,
+Math.PI*2
+);
+ctx.fill();
 
-    const rate =
-        Math.round((hits/10)*100);
+ctx.strokeStyle="black";
+ctx.stroke();
 
-    document.getElementById("result")
-        .style.display="block";
+if(dragging){
 
-    let rank="";
+ctx.strokeStyle="yellow";
+ctx.lineWidth=3;
 
-    if(rate>=80){
-        rank="🏆 神射手";
-    }
-    else if(rate>=60){
-        rank="🔥 很厲害";
-    }
-    else if(rate>=40){
-        rank="👍 不錯";
-    }
-    else{
-        rank="😆 再練練";
-    }
-
-    document.getElementById("finalText")
-        .innerHTML=
-        `
-        命中 ${hits}/10 球<br>
-        命中率 ${rate}%<br><br>
-        ${rank}
-        `;
+ctx.beginPath();
+ctx.moveTo(ball.x,ball.y);
+ctx.lineTo(dragEnd.x,dragEnd.y);
+ctx.stroke();
+}
 }
 
-function restartGame(){
-
-    shotsLeft=10;
-    hits=0;
-    ball=null;
-    gameOver=false;
-
-    document.getElementById("balls")
-        .textContent=10;
-
-    document.getElementById("hits")
-        .textContent=0;
-
-    document.getElementById("result")
-        .style.display="none";
-}
-
+function gameLoop(){
 update();
+draw();
+requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+
+const timer=setInterval(()=>{
+
+if(gameEnded)return;
+
+timeLeft--;
+
+timeEl.textContent=timeLeft;
+
+if(timeLeft<=0){
+
+gameEnded=true;
+
+document.getElementById("gameOver")
+.style.display="block";
+
+document.getElementById("result")
+.innerHTML=
+`時間到！<br>
+得分：${score}<br>
+投籃：${shots}<br>
+命中率：${shots?Math.round(score/shots*100):0}%`;
+}
+
+},1000);
+
+function saveScore(){
+
+const name=
+document.getElementById("playerName").value || "匿名";
+
+let board=
+JSON.parse(localStorage.getItem("basketboard")||"[]");
+
+board.push({
+name,
+score
+});
+
+board.sort((a,b)=>b.score-a.score);
+
+board=board.slice(0,10);
+
+localStorage.setItem(
+"basketboard",
+JSON.stringify(board)
+);
+
+loadScores();
+}
+
+function loadScores(){
+
+let board=
+JSON.parse(localStorage.getItem("basketboard")||"[]");
+
+document.getElementById("scores").innerHTML=
+board.map((p,i)=>
+`${i+1}. ${p.name} - ${p.score}分`
+).join("<br>");
+}
+
+function restart(){
+location.reload();
+}
+
+loadScores();
 
 </script>
-
 </body>
 </html>
