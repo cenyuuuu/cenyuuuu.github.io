@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>九宮格反應測試</title>
+<title>反應挑戰賽</title>
 
 <style>
-
 *{
 margin:0;
 padding:0;
@@ -21,221 +20,336 @@ display:flex;
 justify-content:center;
 align-items:center;
 min-height:100vh;
+padding:20px;
 }
 
 .container{
+width:100%;
+max-width:1000px;
 text-align:center;
-width:90%;
-max-width:700px;
 }
 
 h1{
+margin-bottom:15px;
+}
+
+.stats{
+display:flex;
+justify-content:center;
+gap:20px;
+flex-wrap:wrap;
 margin-bottom:20px;
+}
+
+.card{
+background:#1e293b;
+padding:10px 18px;
+border-radius:10px;
+font-size:18px;
 }
 
 .grid{
 display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:15px;
-margin:30px auto;
-max-width:450px;
+grid-template-columns:repeat(9,1fr);
+gap:4px;
+max-width:900px;
+margin:auto;
 }
 
 .cell{
 aspect-ratio:1;
 background:#334155;
-border-radius:15px;
+border-radius:4px;
 cursor:pointer;
-transition:.2s;
+transition:.12s;
 }
 
-.active{
+.green{
 background:#22c55e;
-box-shadow:0 0 20px #22c55e;
+box-shadow:
+0 0 8px #22c55e,
+0 0 15px #22c55e;
 }
 
-.info{
+.bomb{
+background:#ef4444;
+box-shadow:
+0 0 8px #ef4444,
+0 0 15px #ef4444;
+}
+
+#result{
+display:none;
+margin-top:25px;
 font-size:22px;
-margin:10px;
 }
 
 button{
-padding:12px 25px;
+padding:12px 24px;
 font-size:18px;
 border:none;
 border-radius:10px;
 cursor:pointer;
-margin-top:20px;
+margin-top:15px;
 }
-
-#result{
-margin-top:20px;
-font-size:24px;
-font-weight:bold;
-}
-
 </style>
 </head>
 <body>
 
 <div class="container">
 
-<h1>⚡ 九宮格反應測試</h1>
+<h1>⚡ 反應挑戰賽</h1>
 
-<div class="info">
-回合：
-<span id="round">0</span>/10
+<div class="stats">
+<div class="card">⏱️ <span id="time">120</span>s</div>
+<div class="card">⭐ 分數 <span id="score">0</span></div>
+<div class="card">🟩 命中 <span id="hits">0</span></div>
+<div class="card">💣 炸彈 <span id="bombs">0</span></div>
 </div>
 
 <div class="grid" id="grid"></div>
 
 <div id="result"></div>
 
-<button onclick="startGame()">
-開始遊戲
-</button>
+<button onclick="startGame()">開始遊戲</button>
+<button onclick="location.reload()">重新開始</button>
 
 </div>
 
 <script>
 
-const grid =
-document.getElementById("grid");
+const grid=document.getElementById("grid");
 
-const roundText =
-document.getElementById("round");
+let score=0;
+let hits=0;
+let bombHits=0;
 
-const result =
-document.getElementById("result");
+let gameStarted=false;
+let gameEnded=false;
 
-let currentCell = -1;
+let timeLeft=120;
+let elapsed=0;
 
-let startTime = 0;
+let spawnTimer;
+let countdown;
 
-let round = 0;
+const cells=[];
 
-let reactionTimes = [];
+for(let i=0;i<81;i++){
 
-let active = false;
+const cell=document.createElement("div");
 
-for(let i=0;i<9;i++){
-
-const cell =
-document.createElement("div");
-
-cell.className = "cell";
-
-cell.dataset.index = i;
+cell.className="cell";
 
 cell.addEventListener("click",()=>{
 
-if(
-active &&
-Number(cell.dataset.index) === currentCell
-){
+if(gameEnded)return;
 
-const reaction =
-Date.now() - startTime;
+if(cell.classList.contains("green")){
 
-reactionTimes.push(reaction);
+score+=5;
+hits++;
 
-active = false;
+cell.classList.remove("green");
 
-cell.classList.remove("active");
+updateUI();
+}
 
-nextRound();
+else if(cell.classList.contains("bomb")){
+
+score-=3;
+bombHits++;
+
+cell.classList.remove("bomb");
+
+updateUI();
 }
 });
 
 grid.appendChild(cell);
+cells.push(cell);
+}
+
+function updateUI(){
+
+document.getElementById("score")
+.textContent=score;
+
+document.getElementById("hits")
+.textContent=hits;
+
+document.getElementById("bombs")
+.textContent=bombHits;
+}
+
+function getSpawnSpeed(){
+
+let progress=elapsed/120;
+
+return Math.max(
+150,
+1000-(progress*850)
+);
+}
+
+function getLifeTime(){
+
+let progress=elapsed/120;
+
+return Math.max(
+250,
+1200-(progress*950)
+);
+}
+
+function getBombChance(){
+
+let progress=elapsed/120;
+
+return 0.10+(progress*0.25);
+}
+
+function spawnItem(){
+
+if(gameEnded)return;
+
+const index=
+Math.floor(Math.random()*81);
+
+const cell=cells[index];
+
+if(
+cell.classList.contains("green") ||
+cell.classList.contains("bomb")
+){
+return;
+}
+
+const bomb=
+Math.random()<getBombChance();
+
+if(bomb){
+cell.classList.add("bomb");
+}
+else{
+cell.classList.add("green");
+}
+
+setTimeout(()=>{
+
+cell.classList.remove("green");
+cell.classList.remove("bomb");
+
+},getLifeTime());
+
+spawnTimer=
+setTimeout(
+spawnItem,
+getSpawnSpeed()
+);
 }
 
 function startGame(){
 
-round = 0;
+if(gameStarted)return;
 
-reactionTimes = [];
+gameStarted=true;
 
-result.innerHTML = "";
+spawnItem();
 
-nextRound();
+countdown=setInterval(()=>{
+
+timeLeft--;
+elapsed++;
+
+document.getElementById("time")
+.textContent=timeLeft;
+
+if(timeLeft<=0){
+
+endGame();
 }
 
-function nextRound(){
-
-round++;
-
-roundText.textContent = round-1;
-
-if(round > 10){
-
-finishGame();
-
-return;
+},1000);
 }
 
-const delay =
-Math.random()*2500 + 500;
+function getRank(score){
 
-setTimeout(()=>{
+if(score>=700){
+return "🏆 S級 神級反應";
+}
 
-const cells =
-document.querySelectorAll(".cell");
+if(score>=500){
+return "🥇 A級 超強";
+}
 
-cells.forEach(c=>
-c.classList.remove("active")
+if(score>=300){
+return "🥈 B級 優秀";
+}
+
+if(score>=150){
+return "🥉 C級 不錯";
+}
+
+return "🙂 D級 再接再厲";
+}
+
+function endGame(){
+
+gameEnded=true;
+
+clearInterval(countdown);
+
+clearTimeout(spawnTimer);
+
+document
+.querySelectorAll(".cell")
+.forEach(c=>{
+
+c.classList.remove("green");
+c.classList.remove("bomb");
+
+});
+
+const result=
+document.getElementById("result");
+
+result.style.display="block";
+
+const accuracy=
+hits+bombHits===0
+?0
+:Math.round(
+hits/(hits+bombHits)*100
 );
 
-currentCell =
-Math.floor(Math.random()*9);
-
-cells[currentCell]
-.classList.add("active");
-
-startTime =
-Date.now();
-
-active = true;
-
-roundText.textContent = round;
-
-},delay);
-}
-
-function finishGame(){
-
-const avg =
-Math.round(
-
-reactionTimes.reduce(
-(a,b)=>a+b,0
-)
-/
-reactionTimes.length
-
-);
-
-if(avg < 500){
-
-result.innerHTML =
+result.innerHTML=
 `
-平均反應時間：
-${avg} ms
+<h2>🏁 遊戲結束</h2>
+
+<br>
+
+⭐ 最終分數：${score}
+
 <br><br>
-✅ 過關
+
+🟩 命中綠格：${hits}
+
+<br><br>
+
+💣 點到炸彈：${bombHits}
+
+<br><br>
+
+🎯 準確率：${accuracy}%
+
+<br><br>
+
+${getRank(score)}
 `;
 }
-else{
 
-result.innerHTML =
-`
-平均反應時間：
-${avg} ms
-<br><br>
-❌ 未過關
-`;
-}
-}
+updateUI();
 
 </script>
 
