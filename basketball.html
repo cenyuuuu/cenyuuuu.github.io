@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>🏀 投籃挑戰賽</title>
+<title>反應速度測試</title>
 
 <style>
+
 *{
 margin:0;
 padding:0;
@@ -15,391 +15,171 @@ font-family:Arial,sans-serif;
 }
 
 body{
-background:linear-gradient(135deg,#0f172a,#1e293b);
-color:white;
 display:flex;
 justify-content:center;
 align-items:center;
-min-height:100vh;
-padding:20px;
-}
-
-.container{
-width:100%;
-max-width:950px;
+height:100vh;
+background:#1e293b;
+color:white;
 text-align:center;
 }
 
-h1{
-margin-bottom:15px;
+.container{
+width:90%;
+max-width:600px;
 }
 
-.stats{
-display:flex;
-justify-content:center;
-gap:20px;
-flex-wrap:wrap;
-margin-bottom:15px;
-}
-
-.card{
-background:rgba(255,255,255,.12);
-padding:12px 20px;
-border-radius:12px;
-font-size:18px;
-}
-
-canvas{
-background:linear-gradient(#87ceeb,#cfefff);
-border-radius:15px;
-border:4px solid white;
-width:100%;
-max-width:900px;
-touch-action:none;
-}
-
-#gameOver{
-display:none;
+#gameArea{
 margin-top:20px;
+padding:60px;
+border-radius:20px;
+background:#ef4444;
+cursor:pointer;
+transition:.2s;
+user-select:none;
+}
+
+.green{
+background:#22c55e !important;
+}
+
+h1{
+margin-bottom:20px;
+}
+
+#result{
+margin-top:20px;
+font-size:24px;
+font-weight:bold;
 }
 
 button{
-padding:12px 25px;
+margin-top:20px;
+padding:12px 24px;
+font-size:18px;
 border:none;
 border-radius:10px;
-font-size:18px;
 cursor:pointer;
-margin-top:15px;
 }
 
-#leaderboard{
-margin-top:20px;
-background:rgba(255,255,255,.1);
-padding:15px;
-border-radius:12px;
-}
 </style>
 </head>
 <body>
 
 <div class="container">
 
-<h1>🏀 投籃挑戰賽</h1>
+<h1>⚡ 反應速度測試</h1>
 
-<div class="stats">
-<div class="card">時間：<span id="time">60</span>s</div>
-<div class="card">得分：<span id="score">0</span></div>
-<div class="card">投籃：<span id="shots">0</span></div>
-</div>
-
-<canvas id="game" width="900" height="550"></canvas>
-
-<p style="margin-top:10px">
-拖曳籃球後放開投射
+<p id="message">
+點擊開始後等待畫面變綠
 </p>
 
-<div id="gameOver">
-<h2 id="result"></h2>
-<input id="playerName" placeholder="輸入名字">
-<br>
-<button onclick="saveScore()">儲存成績</button>
-<button onclick="restart()">重新開始</button>
+<div id="gameArea">
+點擊開始
 </div>
 
-<div id="leaderboard">
-<h3>🏆 排行榜</h3>
-<div id="scores"></div>
-</div>
+<div id="result"></div>
+
+<button onclick="startGame()">
+重新開始
+</button>
 
 </div>
 
 <script>
 
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
+const gameArea =
+document.getElementById("gameArea");
 
-let score=0;
-let shots=0;
-let timeLeft=60;
-let gameEnded=false;
+const message =
+document.getElementById("message");
 
-const scoreEl=document.getElementById("score");
-const shotsEl=document.getElementById("shots");
-const timeEl=document.getElementById("time");
+const result =
+document.getElementById("result");
 
-let basket={
-x:350,
-y:180,
-w:120,
-h:12,
-speed:5,
-dir:1
-};
+let startTime;
+let waiting = false;
+let canClick = false;
+let timer;
 
-let ball={
-x:450,
-y:470,
-r:22,
-vx:0,
-vy:0,
-moving:false
-};
+function startGame(){
 
-let dragging=false;
-let dragStart=null;
-let dragEnd=null;
+clearTimeout(timer);
 
-function resetBall(){
-ball.x=450;
-ball.y=470;
-ball.vx=0;
-ball.vy=0;
-ball.moving=false;
+result.innerHTML = "";
+
+gameArea.classList.remove("green");
+
+gameArea.innerHTML = "等待變綠...";
+
+message.innerHTML =
+"不要太早點擊！";
+
+waiting = true;
+canClick = false;
+
+const delay =
+Math.random()*3000 + 2000;
+
+timer = setTimeout(()=>{
+
+gameArea.classList.add("green");
+
+gameArea.innerHTML =
+"立即點擊！";
+
+startTime = Date.now();
+
+canClick = true;
+waiting = false;
+
+},delay);
 }
 
-function getPos(e){
-const rect=canvas.getBoundingClientRect();
+gameArea.addEventListener("click",()=>{
 
-if(e.touches){
-return{
-x:(e.touches[0].clientX-rect.left)*(canvas.width/rect.width),
-y:(e.touches[0].clientY-rect.top)*(canvas.height/rect.height)
-};
+if(canClick){
+
+const reaction =
+Date.now() - startTime;
+
+result.innerHTML =
+`你的反應時間：${reaction} ms`;
+
+if(reaction < 500){
+
+result.innerHTML +=
+"<br>✅ 過關！";
+}
+else{
+
+result.innerHTML +=
+"<br>❌ 未過關";
 }
 
-return{
-x:(e.clientX-rect.left)*(canvas.width/rect.width),
-y:(e.clientY-rect.top)*(canvas.height/rect.height)
-};
+canClick = false;
+
+gameArea.classList.remove("green");
+
+gameArea.innerHTML =
+"測試完成";
 }
 
-canvas.addEventListener("mousedown",startDrag);
-canvas.addEventListener("mousemove",moveDrag);
-canvas.addEventListener("mouseup",endDrag);
+else if(waiting){
 
-canvas.addEventListener("touchstart",startDrag);
-canvas.addEventListener("touchmove",moveDrag);
-canvas.addEventListener("touchend",endDrag);
+clearTimeout(timer);
 
-function startDrag(e){
+result.innerHTML =
+"❌ 太早點擊了！";
 
-if(gameEnded)return;
-if(ball.moving)return;
+gameArea.innerHTML =
+"請重新開始";
 
-const p=getPos(e);
-
-const dx=p.x-ball.x;
-const dy=p.y-ball.y;
-
-if(Math.sqrt(dx*dx+dy*dy)<=ball.r+10){
-dragging=true;
-dragStart={x:ball.x,y:ball.y};
-dragEnd=p;
+waiting = false;
 }
-}
-
-function moveDrag(e){
-
-if(!dragging)return;
-
-dragEnd=getPos(e);
-}
-
-function endDrag(){
-
-if(!dragging)return;
-
-dragging=false;
-
-const powerX=(dragStart.x-dragEnd.x)/8;
-const powerY=(dragStart.y-dragEnd.y)/8;
-
-ball.vx=powerX;
-ball.vy=powerY;
-
-ball.moving=true;
-
-shots++;
-shotsEl.textContent=shots;
-}
-
-function update(){
-
-if(gameEnded)return;
-
-basket.x+=basket.speed*basket.dir;
-
-if(basket.x<30||basket.x+basket.w>canvas.width-30){
-basket.dir*=-1;
-}
-
-if(ball.moving){
-
-ball.x+=ball.vx;
-ball.y+=ball.vy;
-
-ball.vy+=0.35;
-
-if(
-ball.x>basket.x &&
-ball.x<basket.x+basket.w &&
-ball.y>basket.y &&
-ball.y<basket.y+25
-){
-
-score++;
-scoreEl.textContent=score;
-
-resetBall();
-}
-
-if(ball.y>canvas.height+50){
-resetBall();
-}
-
-if(ball.x<ball.r||ball.x>canvas.width-ball.r){
-ball.vx*=-0.8;
-}
-}
-}
-
-function draw(){
-
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-ctx.fillStyle="#888";
-ctx.fillRect(0,520,900,30);
-
-ctx.fillStyle="red";
-ctx.fillRect(
-basket.x,
-basket.y,
-basket.w,
-basket.h
-);
-
-ctx.strokeStyle="white";
-ctx.lineWidth=2;
-
-for(let i=0;i<6;i++){
-
-ctx.beginPath();
-
-ctx.moveTo(
-basket.x+i*20,
-basket.y+10
-);
-
-ctx.lineTo(
-basket.x+i*20+10,
-basket.y+50
-);
-
-ctx.stroke();
-}
-
-ctx.fillStyle="orange";
-
-ctx.beginPath();
-ctx.arc(
-ball.x,
-ball.y,
-ball.r,
-0,
-Math.PI*2
-);
-ctx.fill();
-
-ctx.strokeStyle="black";
-ctx.stroke();
-
-if(dragging){
-
-ctx.strokeStyle="yellow";
-ctx.lineWidth=3;
-
-ctx.beginPath();
-ctx.moveTo(ball.x,ball.y);
-ctx.lineTo(dragEnd.x,dragEnd.y);
-ctx.stroke();
-}
-}
-
-function gameLoop(){
-update();
-draw();
-requestAnimationFrame(gameLoop);
-}
-
-gameLoop();
-
-const timer=setInterval(()=>{
-
-if(gameEnded)return;
-
-timeLeft--;
-
-timeEl.textContent=timeLeft;
-
-if(timeLeft<=0){
-
-gameEnded=true;
-
-document.getElementById("gameOver")
-.style.display="block";
-
-document.getElementById("result")
-.innerHTML=
-`時間到！<br>
-得分：${score}<br>
-投籃：${shots}<br>
-命中率：${shots?Math.round(score/shots*100):0}%`;
-}
-
-},1000);
-
-function saveScore(){
-
-const name=
-document.getElementById("playerName").value || "匿名";
-
-let board=
-JSON.parse(localStorage.getItem("basketboard")||"[]");
-
-board.push({
-name,
-score
 });
 
-board.sort((a,b)=>b.score-a.score);
-
-board=board.slice(0,10);
-
-localStorage.setItem(
-"basketboard",
-JSON.stringify(board)
-);
-
-loadScores();
-}
-
-function loadScores(){
-
-let board=
-JSON.parse(localStorage.getItem("basketboard")||"[]");
-
-document.getElementById("scores").innerHTML=
-board.map((p,i)=>
-`${i+1}. ${p.name} - ${p.score}分`
-).join("<br>");
-}
-
-function restart(){
-location.reload();
-}
-
-loadScores();
-
 </script>
+
 </body>
 </html>
