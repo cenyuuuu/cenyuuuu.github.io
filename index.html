@@ -3,85 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔮 心靈機掏提問器</title>
+<title>🤡 不認真解憂機</title>
 
 <style>
-body{
+*{
     margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
     font-family:"Microsoft JhengHei",sans-serif;
-    background:linear-gradient(135deg,#1e1e2f,#2d3250);
-    color:white;
+    background:linear-gradient(
+        135deg,
+        #f4e6d4,
+        #e8d2b7,
+        #d9b99b
+    );
     min-height:100vh;
     display:flex;
     justify-content:center;
     align-items:center;
+    color:#5a4332;
 }
 
 .container{
     width:90%;
-    max-width:700px;
+    max-width:750px;
+    background:#fffaf4;
+    padding:35px;
+    border-radius:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.15);
     text-align:center;
-    background:rgba(255,255,255,0.08);
-    padding:30px;
-    border-radius:20px;
-    backdrop-filter:blur(10px);
-    box-shadow:0 0 30px rgba(0,0,0,0.3);
 }
 
 h1{
-    margin-bottom:20px;
+    font-size:42px;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    margin-bottom:25px;
+    color:#8b6a53;
+    font-size:18px;
 }
 
 textarea{
     width:100%;
     height:120px;
     border:none;
-    border-radius:12px;
+    border-radius:15px;
     padding:15px;
     font-size:18px;
+    background:#f6ede4;
+    color:#5a4332;
     resize:none;
-    box-sizing:border-box;
+    outline:none;
+}
+
+textarea::placeholder{
+    color:#9f826d;
 }
 
 select{
-    margin-top:15px;
-    padding:10px;
-    border-radius:10px;
+    margin-top:18px;
+    padding:12px;
     border:none;
+    border-radius:12px;
+    background:#f6ede4;
+    color:#5a4332;
     font-size:16px;
 }
 
 button{
-    margin-top:20px;
-    padding:12px 25px;
-    font-size:18px;
+    display:block;
+    margin:20px auto;
+    padding:14px 30px;
     border:none;
-    border-radius:12px;
+    border-radius:15px;
+    font-size:18px;
     cursor:pointer;
-    background:#7c5cff;
+    background:#b88963;
     color:white;
     transition:0.3s;
 }
 
 button:hover{
     transform:scale(1.05);
+    background:#a7764f;
 }
 
 #answerBox{
     margin-top:30px;
-    min-height:150px;
 }
 
 .answer{
-    font-size:24px;
-    line-height:1.8;
+    background:#f9f1e8;
+    padding:20px;
+    border-radius:15px;
     animation:fadeIn 0.8s;
+}
+
+.answer p{
+    margin-top:10px;
+    line-height:1.8;
+}
+
+hr{
+    margin:15px 0;
+    border:none;
+    border-top:2px dashed #d8b79f;
 }
 
 @keyframes fadeIn{
     from{
         opacity:0;
-        transform:translateY(20px);
+        transform:translateY(15px);
     }
     to{
         opacity:1;
@@ -95,13 +132,16 @@ button:hover{
 
 <div class="container">
 
-<h1>🔮 心靈機掏提問器</h1>
+<h1>🤡 不認真解憂機</h1>
 
-<p>把你的煩惱交給宇宙。</p>
+<p class="subtitle">
+輸入你的煩惱，我們保證不會認真處理。
+</p>
 
-<textarea id="worry" placeholder="例如：我明天要考試但完全不想讀書"></textarea>
-
-<br>
+<textarea
+id="worry"
+placeholder="例如：我明天要考試但完全不想讀書">
+</textarea>
 
 <select id="mode">
     <option value="wisdom">🔮 心靈雞湯模式</option>
@@ -109,10 +149,8 @@ button:hover{
     <option value="master">🧙 大師模式</option>
 </select>
 
-<br>
-
 <button onclick="generateAnswer()">
-    獲得啟示
+    開始亂解憂
 </button>
 
 <div id="answerBox"></div>
@@ -126,7 +164,7 @@ const wisdom = [
 "☁️ 雲知道自己是雲，所以從不著急。",
 "🌊 海浪來了又走，煩惱也是。",
 "🌙 月亮有陰晴圓缺，但還是月亮。",
-"🍃 葉子落下並不是失敗，而是季節。",
+"🍃 葉子落下不是失敗，而是季節。",
 "🐢 烏龜很慢，但牠從不懷疑自己。",
 "⭐ 星星白天看不見，但依然存在。",
 "🌈 雨下夠了，彩虹才知道何時出場。",
@@ -161,19 +199,21 @@ const master = [
 ];
 
 function randomItem(arr){
-    return arr[Math.floor(Math.random()*arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function generateAnswer(){
 
-    const worry = document.getElementById("worry").value.trim();
+    const worry =
+        document.getElementById("worry").value.trim();
 
-    if(worry === ""){
-        alert("請先輸入你的煩惱！");
+    if(!worry){
+        alert("請先輸入煩惱！");
         return;
     }
 
-    const mode = document.getElementById("mode").value;
+    const mode =
+        document.getElementById("mode").value;
 
     let result = "";
 
@@ -189,11 +229,15 @@ function generateAnswer(){
 
     document.getElementById("answerBox").innerHTML = `
         <div class="answer">
-            <h2>🔮 宇宙收到你的煩惱：</h2>
+
+            <h2>📨 你提交的煩惱</h2>
             <p>「${worry}」</p>
+
             <hr>
-            <h2>✨ 啟示：</h2>
+
+            <h2>🎲 不認真解憂結果</h2>
             <p>${result}</p>
+
         </div>
     `;
 }
