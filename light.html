@@ -1,403 +1,202 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚡ 極限反應挑戰</title>
+<title>🔮 心靈機掏提問器</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:"Microsoft JhengHei",sans-serif;
-}
-
 body{
-    background:#0f172a;
+    margin:0;
+    font-family:"Microsoft JhengHei",sans-serif;
+    background:linear-gradient(135deg,#1e1e2f,#2d3250);
     color:white;
     min-height:100vh;
     display:flex;
     justify-content:center;
     align-items:center;
-    padding:20px;
 }
 
 .container{
-    width:100%;
-    max-width:1000px;
+    width:90%;
+    max-width:700px;
     text-align:center;
+    background:rgba(255,255,255,0.08);
+    padding:30px;
+    border-radius:20px;
+    backdrop-filter:blur(10px);
+    box-shadow:0 0 30px rgba(0,0,0,0.3);
 }
 
 h1{
-    margin-bottom:15px;
-}
-
-.stats{
-    display:flex;
-    justify-content:center;
-    gap:15px;
-    flex-wrap:wrap;
     margin-bottom:20px;
 }
 
-.card{
-    background:#1e293b;
-    padding:10px 18px;
-    border-radius:10px;
+textarea{
+    width:100%;
+    height:120px;
+    border:none;
+    border-radius:12px;
+    padding:15px;
     font-size:18px;
-    min-width:120px;
+    resize:none;
+    box-sizing:border-box;
 }
 
-.grid{
-    display:grid;
-    grid-template-columns:repeat(9,1fr);
-    gap:4px;
-    max-width:900px;
-    margin:auto;
-}
-
-.cell{
-    aspect-ratio:1;
-    background:#334155;
-    border-radius:4px;
-    cursor:pointer;
-    transition:.12s;
-}
-
-.green{
-    background:#22c55e;
-    box-shadow:
-        0 0 10px #22c55e,
-        0 0 20px #22c55e;
-}
-
-.bomb{
-    background:#ff0000;
-    box-shadow:
-        0 0 10px #ff0000,
-        0 0 20px #ff0000,
-        0 0 35px #ff0000;
-    animation:pulse .4s infinite;
-}
-
-@keyframes pulse{
-    0%{transform:scale(1);}
-    50%{transform:scale(1.15);}
-    100%{transform:scale(1);}
+select{
+    margin-top:15px;
+    padding:10px;
+    border-radius:10px;
+    border:none;
+    font-size:16px;
 }
 
 button{
-    padding:12px 24px;
+    margin-top:20px;
+    padding:12px 25px;
     font-size:18px;
     border:none;
-    border-radius:10px;
+    border-radius:12px;
     cursor:pointer;
-    margin-top:15px;
+    background:#7c5cff;
+    color:white;
+    transition:0.3s;
 }
 
-#result{
-    display:none;
-    margin-top:25px;
-    font-size:22px;
+button:hover{
+    transform:scale(1.05);
+}
+
+#answerBox{
+    margin-top:30px;
+    min-height:150px;
+}
+
+.answer{
+    font-size:24px;
     line-height:1.8;
+    animation:fadeIn 0.8s;
 }
 
-.instructions{
-    margin-bottom:15px;
-    color:#cbd5e1;
+@keyframes fadeIn{
+    from{
+        opacity:0;
+        transform:translateY(20px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
 }
 </style>
 </head>
+
 <body>
 
 <div class="container">
 
-<h1>⚡ 極限反應挑戰</h1>
+<h1>🔮 心靈機掏提問器</h1>
 
-<div class="instructions">
-🟩 點綠色 +5 分　
-💣 點紅色 -5 分　
-⏱️ 遊戲時間 60 秒
-</div>
+<p>把你的煩惱交給宇宙。</p>
 
-<div class="stats">
-    <div class="card">⏱️ <span id="time">60</span>s</div>
-    <div class="card">⭐ 分數 <span id="score">0</span></div>
-    <div class="card">🟩 命中 <span id="hits">0</span></div>
-    <div class="card">💣 炸彈 <span id="bombs">0</span></div>
-</div>
+<textarea id="worry" placeholder="例如：我明天要考試但完全不想讀書"></textarea>
 
-<div class="grid" id="grid"></div>
+<br>
 
-<button id="startBtn">開始遊戲</button>
+<select id="mode">
+    <option value="wisdom">🔮 心靈雞湯模式</option>
+    <option value="nonsense">🤡 幹話模式</option>
+    <option value="master">🧙 大師模式</option>
+</select>
 
-<div id="result"></div>
+<br>
+
+<button onclick="generateAnswer()">
+    獲得啟示
+</button>
+
+<div id="answerBox"></div>
 
 </div>
 
 <script>
 
-const grid = document.getElementById("grid");
-const startBtn = document.getElementById("startBtn");
+const wisdom = [
+"🌿 風不會問樹葉為什麼掉下來。",
+"☁️ 雲知道自己是雲，所以從不著急。",
+"🌊 海浪來了又走，煩惱也是。",
+"🌙 月亮有陰晴圓缺，但還是月亮。",
+"🍃 葉子落下並不是失敗，而是季節。",
+"🐢 烏龜很慢，但牠從不懷疑自己。",
+"⭐ 星星白天看不見，但依然存在。",
+"🌈 雨下夠了，彩虹才知道何時出場。",
+"🌱 種子埋在土裡時，也不知道自己會開花。",
+"🕊️ 有些答案不是找到的，而是等到的。"
+];
 
-const timeEl = document.getElementById("time");
-const scoreEl = document.getElementById("score");
-const hitsEl = document.getElementById("hits");
-const bombsEl = document.getElementById("bombs");
+const nonsense = [
+"🤡 你的問題很好，但我是馬鈴薯。",
+"🦆 有些鴨子會飛，有些只會嘎嘎叫。",
+"🍜 拉麵不會因為你難過而變鹹。",
+"🧦 失蹤的襪子可能只是想放假。",
+"🐱 貓咪從來不解釋牠的決定。",
+"🍉 西瓜不知道自己是圓的。",
+"🥔 馬鈴薯也曾有夢想。",
+"🦖 如果恐龍還活著，牠大概也很煩。",
+"🍞 麵包從來不擔心明天。",
+"🐔 雞不知道為什麼過馬路，但牠還是過去了。"
+];
 
-let score = 0;
-let hits = 0;
-let bombHits = 0;
+const master = [
+"🧙 真正的答案不在問題裡。",
+"🧙 當你想知道答案時，答案也正在想你。",
+"🧙 不要追逐答案，讓答案追逐你。",
+"🧙 問題之所以存在，是因為你發現了它。",
+"🧙 今天的困惑，是明天的迷惑。",
+"🧙 真理藏在重新整理按鈕後面。",
+"🧙 若你看見道路，道路便不是道路。",
+"🧙 有些門打開之前，本來就是開著的。",
+"🧙 你以為你在思考，其實思考也在思考你。",
+"🧙 沒有人能回答所有問題，包括這一句。"
+];
 
-let timeLeft = 60;
-let elapsed = 0;
-
-let gameStarted = false;
-let gameEnded = false;
-
-let countdown;
-let spawnLoop;
-
-const cells = [];
-
-/* 建立81格 */
-
-for(let i=0;i<81;i++){
-
-    const cell = document.createElement("div");
-    cell.className = "cell";
-
-    cell.addEventListener("click",()=>{
-
-        if(gameEnded) return;
-
-        if(cell.classList.contains("green")){
-
-            score += 5;
-            hits++;
-
-            cell.classList.remove("green");
-
-            updateUI();
-        }
-
-        else if(cell.classList.contains("bomb")){
-
-            score -= 5;
-            bombHits++;
-
-            cell.classList.remove("bomb");
-
-            updateUI();
-        }
-
-    });
-
-    grid.appendChild(cell);
-    cells.push(cell);
+function randomItem(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
 }
 
-/* UI */
+function generateAnswer(){
 
-function updateUI(){
+    const worry = document.getElementById("worry").value.trim();
 
-    scoreEl.textContent = score;
-    hitsEl.textContent = hits;
-    bombsEl.textContent = bombHits;
-}
-
-/* 難度曲線 */
-
-function getSpawnSpeed(){
-
-    const progress = elapsed / 60;
-
-    return Math.max(
-        120,
-        1000 - progress * 850
-    );
-}
-
-function getLifeTime(){
-
-    const progress = elapsed / 60;
-
-    return Math.max(
-        250,
-        1000 - progress * 700
-    );
-}
-
-function getBombChance(){
-
-    const progress = elapsed / 60;
-
-    return 0.30 + progress * 0.35;
-}
-
-/* 隨機產生 */
-
-function spawnOne(){
-
-    if(gameEnded) return;
-
-    let index =
-        Math.floor(Math.random() * 81);
-
-    let cell = cells[index];
-
-    if(
-        cell.classList.contains("green") ||
-        cell.classList.contains("bomb")
-    ){
+    if(worry === ""){
+        alert("請先輸入你的煩惱！");
         return;
     }
 
-    const isBomb =
-        Math.random() < getBombChance();
+    const mode = document.getElementById("mode").value;
 
-    if(isBomb){
-        cell.classList.add("bomb");
+    let result = "";
+
+    if(mode === "wisdom"){
+        result = randomItem(wisdom);
+    }
+    else if(mode === "nonsense"){
+        result = randomItem(nonsense);
     }
     else{
-        cell.classList.add("green");
+        result = randomItem(master);
     }
 
-    setTimeout(()=>{
-
-        cell.classList.remove("green");
-        cell.classList.remove("bomb");
-
-    },getLifeTime());
-}
-
-/* 遊戲主循環 */
-
-function gameSpawner(){
-
-    if(gameEnded) return;
-
-    spawnOne();
-
-    if(elapsed > 20){
-        spawnOne();
-    }
-
-    if(elapsed > 40){
-        spawnOne();
-    }
-
-    spawnLoop =
-        setTimeout(
-            gameSpawner,
-            getSpawnSpeed()
-        );
-}
-
-/* 開始 */
-
-function startGame(){
-
-    if(gameStarted) return;
-
-    gameStarted = true;
-
-    startBtn.disabled = true;
-
-    gameSpawner();
-
-    countdown = setInterval(()=>{
-
-        timeLeft--;
-        elapsed++;
-
-        timeEl.textContent = timeLeft;
-
-        if(timeLeft <= 0){
-            endGame();
-        }
-
-    },1000);
-}
-
-/* 評價 */
-
-function getRank(){
-
-    if(score >= 500){
-        return "🏆 S級 神級反應";
-    }
-
-    if(score >= 350){
-        return "🥇 A級 超強";
-    }
-
-    if(score >= 220){
-        return "🥈 B級 優秀";
-    }
-
-    if(score >= 120){
-        return "🥉 C級 不錯";
-    }
-
-    return "🙂 D級 再接再厲";
-}
-
-/* 結束 */
-
-function endGame(){
-
-    gameEnded = true;
-
-    clearInterval(countdown);
-    clearTimeout(spawnLoop);
-
-    document
-    .querySelectorAll(".cell")
-    .forEach(c=>{
-
-        c.classList.remove("green");
-        c.classList.remove("bomb");
-
-    });
-
-    const accuracy =
-        (hits + bombHits) === 0
-        ? 0
-        : Math.round(
-            hits /
-            (hits + bombHits)
-            * 100
-        );
-
-    const result =
-        document.getElementById("result");
-
-    result.style.display = "block";
-
-    result.innerHTML = `
-        <h2>🏁 遊戲結束</h2>
-
-        ⭐ 最終分數：${score}<br>
-
-        🟩 命中綠格：${hits}<br>
-
-        💣 點到炸彈：${bombHits}<br>
-
-        🎯 準確率：${accuracy}%<br>
-
-        ${getRank()}<br><br>
-
-        <button onclick="location.reload()">
-            再玩一次
-        </button>
+    document.getElementById("answerBox").innerHTML = `
+        <div class="answer">
+            <h2>🔮 宇宙收到你的煩惱：</h2>
+            <p>「${worry}」</p>
+            <hr>
+            <h2>✨ 啟示：</h2>
+            <p>${result}</p>
+        </div>
     `;
 }
-
-startBtn.addEventListener("click",startGame);
-
-updateUI();
 
 </script>
 
